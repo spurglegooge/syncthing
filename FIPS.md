@@ -139,6 +139,50 @@ This should print nothing. (The Go standard library's own *vendored* copy of
 `crypto/tls`/HPKE and is disabled by the module in approved mode; it is not
 application code and cannot be removed.)
 
+## Validating your deployment
+
+The build, the unit tests, and the FIPS module mechanism are verified in CI and
+during development (approved mode activates, the binary links no non-approved
+cryptography, and core sync works). The following acceptance checks must be run
+on your own hardware and network, since they depend on the real environment:
+
+1. **Run on each target OS.** Build and start a FIPS binary on each platform you
+   deploy (notably macOS, which can only be cross-*compiled* elsewhere) and
+   confirm the startup log shows:
+
+   ```
+   INF FIPS 140-3 approved-mode cryptography is active (log.pkg=fips)
+   ```
+
+2. **Build with the GUI assets.** Development/CI may use `-tags noassets`. A real
+   build generates the web assets first, as usual; there is no FIPS-specific
+   step:
+
+   ```sh
+   go generate ./lib/api/auto
+   GOFIPS140=v1.0.0 go build -tags fips -o syncthing ./cmd/syncthing
+   ```
+
+3. **Multi-node sync.** Pair two FIPS nodes on your network and confirm a folder
+   syncs. Connections use TCP and the relay; `quic://` is intentionally
+   unavailable. A FIPS node and a standard node should also interoperate for
+   normal (unencrypted) folders.
+
+4. **GUI login.** Set a GUI/admin password on a FIPS build and confirm login
+   works. The hash is PBKDF2 (`$pbkdf2-sha256$...`), not bcrypt; a password set
+   on a standard build will not validate and must be set again.
+
+5. **Encrypted-folder rejection.** Confirm that adding a receive-encrypted folder
+   (or sharing with an encryption password) is refused at startup with a clear
+   error — this is expected and required in a FIPS build.
+
+6. **Confirm no non-approved crypto is linked** (see the command in
+   [Verifying a build is clean](#verifying-a-build-is-clean)).
+
+7. **Assessment step.** Confirm CMVP certificate #5247 is currently *Active* and
+   check the tested operating environments for your platform — see
+   [FIPS-COMPLIANCE.md](FIPS-COMPLIANCE.md).
+
 ## Compliance evidence
 
 The validated module identity (CMVP certificate), the BoringCrypto alternative,
