@@ -26,6 +26,7 @@ import (
 
 	"github.com/syncthing/syncthing/lib/build"
 	"github.com/syncthing/syncthing/lib/events"
+	"github.com/syncthing/syncthing/lib/fips"
 	"github.com/syncthing/syncthing/lib/fs"
 	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/rand"
@@ -835,14 +836,27 @@ func TestGUIPasswordHash(t *testing.T) {
 		t.Errorf("Match on different password: %v", err)
 	}
 
-	// Setting a bcrypt hash directly should also work
-	hash, err := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.MinCost)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c.SetPassword(string(hash))
-	if err := c.CompareHashedPassword("test"); err != nil {
-		t.Errorf("No match on hashed password: %v", err)
+	// Setting an already-hashed value directly should also work. FIPS builds
+	// hash with PBKDF2 rather than bcrypt, so we feed back the value produced
+	// by SetPassword above; standard builds additionally accept a bcrypt hash.
+	if fips.RequiredByBuild {
+		preHashed := c.Password
+		c.SetPassword(preHashed)
+		if c.Password != preHashed {
+			t.Error("Pre-hashed password should be stored verbatim")
+		}
+		if err := c.CompareHashedPassword(testPass); err != nil {
+			t.Errorf("No match on pre-hashed password: %v", err)
+		}
+	} else {
+		hash, err := bcrypt.GenerateFromPassword([]byte("test"), bcrypt.MinCost)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.SetPassword(string(hash))
+		if err := c.CompareHashedPassword("test"); err != nil {
+			t.Errorf("No match on hashed password: %v", err)
+		}
 	}
 }
 
@@ -1541,6 +1555,9 @@ func TestXattrFilter(t *testing.T) {
 }
 
 func TestUntrustedIntroducer(t *testing.T) {
+	if fips.RequiredByBuild {
+		t.Skip("untrusted (encrypted) devices are not supported in FIPS builds")
+	}
 	fd, err := os.Open("testdata/untrustedintroducer.xml")
 	if err != nil {
 		t.Fatal(err)

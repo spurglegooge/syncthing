@@ -4,6 +4,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
+//go:build !fips
+
+// The encrypted folder feature is unavailable in FIPS builds (its primitives
+// are not FIPS 140-3 approved), so these tests do not apply there.
+
 package protocol
 
 import (
@@ -19,12 +24,8 @@ import (
 	"github.com/syncthing/syncthing/lib/rand"
 )
 
-var (
-	testKeyGen = NewKeyGenerator()
-
-	// https://github.com/syncthing/syncthing/issues/8799
-	cryptoIsBrokenUnderRaceDetector = (build.IsLinux || build.IsDarwin) && strings.HasPrefix(runtime.Version(), "go1.20")
-)
+// https://github.com/syncthing/syncthing/issues/8799
+var cryptoIsBrokenUnderRaceDetector = (build.IsLinux || build.IsDarwin) && strings.HasPrefix(runtime.Version(), "go1.20")
 
 func TestEnDecryptName(t *testing.T) {
 	if cryptoIsBrokenUnderRaceDetector {

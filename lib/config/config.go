@@ -280,6 +280,10 @@ func (cfg *Configuration) prepare(myID protocol.DeviceID) error {
 		return err
 	}
 
+	if err := cfg.checkFIPSConstraints(); err != nil {
+		return err
+	}
+
 	cfg.GUI.prepare()
 
 	guiPWIsSet := cfg.GUI.User != "" && cfg.GUI.Password != ""

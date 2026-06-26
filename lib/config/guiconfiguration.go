@@ -9,14 +9,16 @@ package config
 import (
 	"net/url"
 	"os"
-	"regexp"
 	"strconv"
 	"strings"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/syncthing/syncthing/lib/rand"
 )
+
+// Password hashing (SetPassword / CompareHashedPassword) is build-tag
+// dependent: the standard build uses bcrypt (password_bcrypt.go), while the
+// FIPS build uses PBKDF2-HMAC-SHA256 (password_pbkdf2.go), as bcrypt is not a
+// FIPS 140-3 approved algorithm.
 
 type GUIConfiguration struct {
 	Enabled                   bool     `json:"enabled" xml:"enabled,attr" default:"true"`
@@ -130,33 +132,6 @@ func (c GUIConfiguration) URL() string {
 	}
 
 	return u.String()
-}
-
-// matches a bcrypt hash and not too much else
-var bcryptExpr = regexp.MustCompile(`^\$2[aby]\$\d+\$.{50,}`)
-
-// SetPassword takes a bcrypt hash or a plaintext password and stores it.
-// Plaintext passwords are hashed. Returns an error if the password is not
-// valid.
-func (c *GUIConfiguration) SetPassword(password string) error {
-	if bcryptExpr.MatchString(password) {
-		// Already hashed
-		c.Password = password
-		return nil
-	}
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return err
-	}
-	c.Password = string(hash)
-	return nil
-}
-
-// CompareHashedPassword returns nil when the given plaintext password matches the stored hash.
-func (c GUIConfiguration) CompareHashedPassword(password string) error {
-	configPasswordBytes := []byte(c.Password)
-	passwordBytes := []byte(password)
-	return bcrypt.CompareHashAndPassword(configPasswordBytes, passwordBytes)
 }
 
 // IsValidAPIKey returns true when the given API key is valid, including both

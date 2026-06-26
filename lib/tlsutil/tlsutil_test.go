@@ -99,8 +99,11 @@ func TestCheckCipherSuites(t *testing.T) {
 
 	suites := SecureDefaultWithTLS12().CipherSuites
 
-	if len(suites) != len(allSuites) {
-		t.Fatal("should get a list representing all suites")
+	// The configured suites are build dependent (FIPS builds use a smaller,
+	// approved subset), but must always be drawn from the set enumerated
+	// above. Compare against the active cipherSuites list for the count.
+	if len(suites) != len(cipherSuites) {
+		t.Fatal("should get a list representing the configured suites")
 	}
 
 	// Check that the returned list of suites doesn't contain anything

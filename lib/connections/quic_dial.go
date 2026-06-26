@@ -4,8 +4,8 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-//go:build go1.15 && !noquic
-// +build go1.15,!noquic
+//go:build go1.15 && !noquic && !fips
+// +build go1.15,!noquic,!fips
 
 package connections
 

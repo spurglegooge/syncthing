@@ -46,6 +46,7 @@ import (
 	"github.com/syncthing/syncthing/lib/config"
 	"github.com/syncthing/syncthing/lib/dialer"
 	"github.com/syncthing/syncthing/lib/events"
+	"github.com/syncthing/syncthing/lib/fips"
 	"github.com/syncthing/syncthing/lib/fs"
 	"github.com/syncthing/syncthing/lib/locations"
 	"github.com/syncthing/syncthing/lib/osutil"
@@ -431,6 +432,9 @@ func (c *serveCmd) syncthingMain() {
 	// Print our version information up front, so any crash that happens
 	// early etc. will have it available.
 	slog.Info(build.LongVersion) //nolint:sloglint
+
+	// Report whether FIPS 140-3 approved-mode cryptography is in effect.
+	fips.LogStartupStatus()
 
 	// Ensure that we have a certificate and key.
 	cert, err := syncthing.LoadOrGenerateCertificate(

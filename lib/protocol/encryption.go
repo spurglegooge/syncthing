@@ -8,35 +8,34 @@ package protocol
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base32"
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 	"sync"
 
 	lru "github.com/hashicorp/golang-lru/v2"
-	"github.com/miscreant/miscreant.go"
-	"golang.org/x/crypto/chacha20poly1305"
-	"golang.org/x/crypto/hkdf"
-	"golang.org/x/crypto/scrypt"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/syncthing/syncthing/internal/gen/bep"
 	"github.com/syncthing/syncthing/lib/rand"
 )
 
+// The low-level cryptographic primitives used for the (optional) encrypted
+// folder feature live in encryption_crypto_default.go (the standard build,
+// using ChaCha20-Poly1305, AES-SIV, scrypt and HKDF) and
+// encryption_crypto_fips.go (FIPS builds, where the feature is disabled
+// because those primitives are not FIPS 140-3 approved). The constants
+// nonceSize and tagSize are likewise defined there, as they depend on the
+// AEAD in use.
+
 const (
-	nonceSize             = 24   // chacha20poly1305.NonceSizeX
-	tagSize               = 16   // chacha20poly1305.Overhead()
 	keySize               = 32   // fits both chacha20poly1305 and AES-SIV
 	minPaddedSize         = 1024 // smallest block we'll allow
 	blockOverhead         = tagSize + nonceSize
 	maxPathComponent      = 200              // characters
 	encryptedDirExtension = ".syncthing-enc" // for top level dirs
-	miscreantAlgo         = "AES-SIV"
 	folderKeyCacheEntries = 1000
 	fileKeyCacheEntries   = 5000
 )
@@ -444,79 +443,10 @@ func decryptName(name string, key *[keySize]byte) (string, error) {
 	return string(dec), nil
 }
 
-// encryptBytes encrypts bytes with a random nonce
-func encryptBytes(data []byte, key *[keySize]byte) []byte {
-	nonce := randomNonce()
-	return encrypt(data, nonce, key)
-}
-
-// encryptDeterministic encrypts bytes using AES-SIV
-func encryptDeterministic(data []byte, key *[keySize]byte, additionalData []byte) []byte {
-	aead, err := miscreant.NewAEAD(miscreantAlgo, key[:], 0)
-	if err != nil {
-		panic("cipher failure: " + err.Error())
-	}
-	return aead.Seal(nil, nil, data, additionalData)
-}
-
-// decryptDeterministic decrypts bytes using AES-SIV
-func decryptDeterministic(data []byte, key *[keySize]byte, additionalData []byte) ([]byte, error) {
-	aead, err := miscreant.NewAEAD(miscreantAlgo, key[:], 0)
-	if err != nil {
-		panic("cipher failure: " + err.Error())
-	}
-	return aead.Open(nil, nil, data, additionalData)
-}
-
-func encrypt(data []byte, nonce *[nonceSize]byte, key *[keySize]byte) []byte {
-	aead, err := chacha20poly1305.NewX(key[:])
-	if err != nil {
-		// Can only fail if the key is the wrong length
-		panic("cipher failure: " + err.Error())
-	}
-
-	if aead.NonceSize() != nonceSize || aead.Overhead() != tagSize {
-		// We want these values to be constant for our type declarations so
-		// we don't use the values returned by the GCM, but we verify them
-		// here.
-		panic("crypto parameter mismatch")
-	}
-
-	// Data is appended to the nonce
-	return aead.Seal(nonce[:], nonce[:], data, nil)
-}
-
-// DecryptBytes returns the decrypted bytes, or an error if decryption
-// failed.
-func DecryptBytes(data []byte, key *[keySize]byte) ([]byte, error) {
-	if len(data) < blockOverhead {
-		return nil, errors.New("data too short")
-	}
-
-	aead, err := chacha20poly1305.NewX(key[:])
-	if err != nil {
-		// Can only fail if the key is the wrong length
-		panic("cipher failure: " + err.Error())
-	}
-
-	if aead.NonceSize() != nonceSize || aead.Overhead() != tagSize {
-		// We want these values to be constant for our type declarations so
-		// we don't use the values returned by the GCM, but we verify them
-		// here.
-		panic("crypto parameter mismatch")
-	}
-
-	return aead.Open(nil, data[:nonceSize], data[nonceSize:], nil)
-}
-
-// randomNonce is a normal, cryptographically random nonce
-func randomNonce() *[nonceSize]byte {
-	var nonce [nonceSize]byte
-	if _, err := rand.Read(nonce[:]); err != nil {
-		panic("catastrophic randomness failure: " + err.Error())
-	}
-	return &nonce
-}
+// The random-nonce AEAD (encryptBytes/DecryptBytes) and deterministic AEAD
+// (encryptDeterministic/decryptDeterministic) primitives are defined in the
+// build-tagged encryption_crypto_*.go files, as are the passwordKDF and
+// fileKDF key-derivation helpers used below.
 
 // keysFromPasswords converts a set of folder ID to password into a set of
 // folder ID to encryption key, using our key derivation function.
@@ -561,7 +491,7 @@ func (g *KeyGenerator) KeyFromPassword(folderID, password string) *[keySize]byte
 	if key, ok := g.folderKeys.Get(cacheKey); ok {
 		return key
 	}
-	bs, err := scrypt.Key([]byte(password), knownBytes(folderID), 32768, 8, 1, keySize)
+	bs, err := passwordKDF(folderID, password)
 	if err != nil {
 		panic("key derivation failure: " + err.Error())
 	}
@@ -573,8 +503,6 @@ func (g *KeyGenerator) KeyFromPassword(folderID, password string) *[keySize]byte
 	g.folderKeys.Add(cacheKey, &key)
 	return &key
 }
-
-var hkdfSalt = []byte("syncthing")
 
 type fileKeyCacheKey struct {
 	file string
@@ -588,10 +516,8 @@ func (g *KeyGenerator) FileKey(filename string, folderKey *[keySize]byte) *[keyS
 	if key, ok := g.fileKeys.Get(cacheKey); ok {
 		return key
 	}
-	kdf := hkdf.New(sha256.New, append(folderKey[:], filename...), hkdfSalt, nil)
-	var fileKey [keySize]byte
-	n, err := io.ReadFull(kdf, fileKey[:])
-	if err != nil || n != keySize {
+	fileKey, err := fileKDF(folderKey, filename)
+	if err != nil {
 		panic("hkdf failure")
 	}
 	g.fileKeys.Add(cacheKey, &fileKey)
