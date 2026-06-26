@@ -139,6 +139,13 @@ This should print nothing. (The Go standard library's own *vendored* copy of
 `crypto/tls`/HPKE and is disabled by the module in approved mode; it is not
 application code and cannot be removed.)
 
+## Compliance evidence
+
+The validated module identity (CMVP certificate), the BoringCrypto alternative,
+and how to establish a binary's provenance for an assessment (e.g. NIST
+SP 800-171 control 3.13.11) are documented separately in
+[FIPS-COMPLIANCE.md](FIPS-COMPLIANCE.md).
+
 ## Scope and caveats
 
 Building on the validated Go Cryptographic Module means the cryptography in use
