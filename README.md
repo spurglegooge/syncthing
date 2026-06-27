@@ -6,6 +6,13 @@
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/88/badge)](https://bestpractices.coreinfrastructure.org/projects/88)
 [![Go Report Card](https://goreportcard.com/badge/github.com/syncthing/syncthing)](https://goreportcard.com/report/github.com/syncthing/syncthing)
 
+> [!NOTE]
+> **AirinSync is a FIPS-compliant fork of [Syncthing](https://syncthing.net/).**
+> It is built to use only FIPS 140-3 approved cryptography. As a consequence,
+> the **encrypted folders** feature is **disabled** (its primitives are not
+> FIPS-approved), and so is the QUIC transport. See [FIPS.md](FIPS.md) for
+> details.
+
 AirinSync is a FIPS-hardened distribution of [Syncthing][15], built to use only
 FIPS 140-3 approved cryptography (see [FIPS.md](FIPS.md)). It tracks the
 upstream Syncthing codebase; the underlying module path and wire protocol are
