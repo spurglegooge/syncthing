@@ -454,6 +454,7 @@ func install(target target, tags []string) {
 	lazyRebuildAssets()
 
 	tags = append(target.tags, tags...)
+	pinFIPSModuleVersion(tags)
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -482,6 +483,7 @@ func install(target target, tags []string) {
 func build(target target, tags []string) {
 	lazyRebuildAssets()
 	tags = append(target.tags, tags...)
+	pinFIPSModuleVersion(tags)
 
 	rmr(target.BinaryName())
 
@@ -508,6 +510,28 @@ func build(target target, tags []string) {
 	}
 	args = appendParameters(args, tags, target.buildPkgs...)
 	runPrint(goCmd, args...)
+}
+
+// fipsModuleVersion is the validated version of the Go Cryptographic Module
+// (CMVP certificate #5247) that FIPS builds must link. The CMVP consolidated
+// certificate requires a product to "continue to use the validated version of
+// the cryptographic module" throughout its life-cycle, so we pin it here
+// rather than relying on the operator to pass GOFIPS140 by hand.
+const fipsModuleVersion = "v1.0.0"
+
+// pinFIPSModuleVersion sets GOFIPS140 for FIPS builds so the toolchain links
+// the validated module version and records it in the binary's build info
+// (lib/fips reads it back at runtime; see FIPS-COMPLIANCE.md). An explicit
+// GOFIPS140 already present in the environment is respected.
+func pinFIPSModuleVersion(tags []string) {
+	for _, t := range tags {
+		if t == "fips" {
+			if os.Getenv("GOFIPS140") == "" {
+				os.Setenv("GOFIPS140", fipsModuleVersion)
+			}
+			return
+		}
+	}
 }
 
 func setBuildEnvVars() {

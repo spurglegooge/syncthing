@@ -123,14 +123,23 @@ go version -m ./AirinSync | grep -E 'GOFIPS140|fips140v1.0|vcs.revision'
 ### Run-time evidence
 
 The module runs its power-on self-tests (KATs/CASTs) at startup when in
-approved mode. Syncthing additionally logs its FIPS state:
+approved mode. AirinSync additionally logs its FIPS state, including the exact
+validated module version (read from the `GOFIPS140` build setting by
+`lib/fips.ModuleVersion()`) and the CMVP certificate number:
 
 ```
-INF FIPS 140-3 approved-mode cryptography is active (log.pkg=fips)
+INF FIPS 140-3 approved-mode cryptography is active (Go Cryptographic Module v1.0.0, CMVP #5247) (log.pkg=fips)
 ```
 
 A FIPS build that is started without approved mode logs a warning instead, so
 the operational state is visible in the service logs.
+
+The build tooling pins the validated module version: `build.go` sets
+`GOFIPS140=v1.0.0` whenever the `fips` tag is present (`pinFIPSModuleVersion`),
+so an official FIPS build records the validated version automatically rather
+than relying on the operator to pass it. This directly supports the CMVP
+consolidated certificate's requirement that a product "continue to use the
+validated version of the cryptographic module" throughout its life-cycle.
 
 ### Confirming no non-approved cryptography is linked
 

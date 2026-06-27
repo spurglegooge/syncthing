@@ -16,6 +16,7 @@ package fips
 import (
 	"crypto/fips140"
 	"log/slog"
+	"runtime/debug"
 )
 
 // Enabled reports whether the Go cryptographic module is currently operating
@@ -23,6 +24,29 @@ import (
 // GODEBUG=fips140=on at run time).
 func Enabled() bool {
 	return fips140.Enabled()
+}
+
+// ModuleVersion returns the version of the Go Cryptographic Module that this
+// binary was built against, e.g. "v1.0.0". The value is the GOFIPS140 build
+// setting, which the toolchain records in the binary when the module is
+// selected at build time (GOFIPS140=v1.0.0). It is read back here from the
+// embedded build information, so the running binary self-reports the exact
+// validated module version it links. Returns "" if no module version was
+// pinned at build time.
+func ModuleVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	for _, s := range info.Settings {
+		if s.Key == "GOFIPS140" {
+			if s.Value == "" || s.Value == "off" {
+				return ""
+			}
+			return s.Value
+		}
+	}
+	return ""
 }
 
 // RequiredByBuild reports whether this binary was built with the "fips" build
@@ -39,7 +63,11 @@ var RequiredByBuild = requiredByBuild
 func LogStartupStatus() {
 	switch {
 	case Enabled():
-		slog.Info("FIPS 140-3 approved-mode cryptography is active")
+		if v := ModuleVersion(); v != "" {
+			slog.Info("FIPS 140-3 approved-mode cryptography is active (Go Cryptographic Module " + v + ", CMVP #5247)")
+		} else {
+			slog.Info("FIPS 140-3 approved-mode cryptography is active")
+		}
 	case RequiredByBuild:
 		slog.Warn("This is a FIPS build but the Go cryptographic module is not in approved mode; build with GOFIPS140=v1.0.0 (or later) or run with GODEBUG=fips140=on")
 	}
