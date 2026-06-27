@@ -99,7 +99,7 @@ func setBuildData() {
 
 	stamp, _ := strconv.Atoi(Stamp)
 	Date = time.Unix(int64(stamp), 0)
-	LongVersion = LongVersionFor("syncthing")
+	LongVersion = LongVersionFor("AirinSync")
 }
 
 // LongVersionFor returns the long version string for the given program name.
@@ -175,5 +175,5 @@ func filterString(s, allowedChars string) string {
 
 func AddTag(tag string) {
 	extraTags = append(extraTags, tag)
-	LongVersion = LongVersionFor("syncthing")
+	LongVersion = LongVersionFor("AirinSync")
 }

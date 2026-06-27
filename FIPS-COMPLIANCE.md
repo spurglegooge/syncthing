@@ -16,6 +16,21 @@ SC-13).
 > over time. Direct retrieval of the CMVP pages was not possible from the build
 > environment (egress policy), so the live status has not been embedded here.
 
+## Product naming and lineage
+
+This software is distributed as **AirinSync**, a FIPS-hardened distribution
+built from the open-source Syncthing codebase. The product name, binary, and
+version banner read `AirinSync` to distinguish this build (and its restricted,
+approved-mode cryptography) from upstream Syncthing.
+
+For traceability, the underlying Go module path and wire protocol intentionally
+retain their upstream identifiers. Specifically, binary provenance
+(`go version -m`) reports the module path `github.com/syncthing/syncthing`. This
+is expected and is **not** a discrepancy: AirinSync is the same codebase with
+non-approved cryptography compiled out (see [FIPS.md](FIPS.md)), not a
+re-homed module. Retaining the upstream path preserves the ability to apply
+upstream security fixes.
+
 ## Module linked by this build
 
 Syncthing's FIPS build does **not** use cgo or BoringCrypto. It uses the native
@@ -74,8 +89,8 @@ A FIPS binary records its build inputs, which can be read back with
 version, the build tags, and the source revision.
 
 ```
-$ go version -m ./syncthing
-./syncthing: go1.25.0
+$ go version -m ./AirinSync
+./AirinSync: go1.25.0
         build   -tags=fips,fips140v1.0
         build   GOFIPS140=v1.0.0
         build   GOOS=...
@@ -101,8 +116,8 @@ Evidence points for an assessment:
 
 ```sh
 git checkout <release-commit>
-GOFIPS140=v1.0.0 go build -tags fips -o syncthing ./cmd/syncthing
-go version -m ./syncthing | grep -E 'GOFIPS140|fips140v1.0|vcs.revision'
+GOFIPS140=v1.0.0 go build -tags fips -o AirinSync ./cmd/syncthing
+go version -m ./AirinSync | grep -E 'GOFIPS140|fips140v1.0|vcs.revision'
 ```
 
 ### Run-time evidence

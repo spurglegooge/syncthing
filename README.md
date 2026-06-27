@@ -84,7 +84,7 @@ build process.
 
 Syncthing can additionally be built in a FIPS variant that restricts it to
 cryptography from the FIPS 140-3 validated Go cryptographic module
-(`GOFIPS140=v1.0.0 go build -tags fips ./cmd/syncthing`). This is intended for
+(`GOFIPS140=v1.0.0 go build -tags fips -o AirinSync ./cmd/syncthing`). This is intended for
 deployments with a FIPS requirement running on their own set of nodes. See
 [FIPS.md](FIPS.md) for how to build, run, and verify it, and for the feature
 restrictions it imposes (encrypted folders and QUIC are disabled).

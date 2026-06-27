@@ -92,7 +92,7 @@ var targets = map[string]target{
 		debdeps:     []string{"libc6", "procps"},
 		description: "Open Source Continuous File Synchronization",
 		buildPkgs:   []string{"github.com/syncthing/syncthing/cmd/syncthing"},
-		binaryName:  "syncthing", // .exe will be added automatically for Windows builds
+		binaryName:  "AirinSync", // .exe will be added automatically for Windows builds
 		archiveFiles: []archiveFile{
 			{src: "{{binary}}", dst: "{{binary}}", perm: 0o755},
 			{src: "README.md", dst: "README.txt", perm: 0o644},

@@ -28,7 +28,7 @@ Windows**, and cross-compiles like any other Go target.
 Add the `fips` build tag and build against the FIPS module:
 
 ```sh
-GOFIPS140=v1.0.0 go build -tags fips -o syncthing ./cmd/syncthing
+GOFIPS140=v1.0.0 go build -tags fips -o AirinSync ./cmd/syncthing
 ```
 
 Or, using the build script:
@@ -66,8 +66,8 @@ A binary built with `GOFIPS140` runs in approved mode by default. You can also
 force the module on (or off) at run time with the GODEBUG setting:
 
 ```sh
-GODEBUG=fips140=on  ./syncthing serve   # approved mode
-GODEBUG=fips140=only ./syncthing serve  # approved mode; panic on any non-approved call
+GODEBUG=fips140=on  ./AirinSync serve   # approved mode
+GODEBUG=fips140=only ./AirinSync serve  # approved mode; panic on any non-approved call
 ```
 
 At startup Syncthing logs its FIPS state, e.g.:
@@ -160,7 +160,7 @@ on your own hardware and network, since they depend on the real environment:
 
    ```sh
    go generate ./lib/api/auto
-   GOFIPS140=v1.0.0 go build -tags fips -o syncthing ./cmd/syncthing
+   GOFIPS140=v1.0.0 go build -tags fips -o AirinSync ./cmd/syncthing
    ```
 
 3. **Multi-node sync.** Pair two FIPS nodes on your network and confirm a folder
