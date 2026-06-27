@@ -6,15 +6,22 @@
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/88/badge)](https://bestpractices.coreinfrastructure.org/projects/88)
 [![Go Report Card](https://goreportcard.com/badge/github.com/syncthing/syncthing)](https://goreportcard.com/report/github.com/syncthing/syncthing)
 
+AirinSync is a FIPS-hardened distribution of [Syncthing][15], built to use only
+FIPS 140-3 approved cryptography (see [FIPS.md](FIPS.md)). It tracks the
+upstream Syncthing codebase; the underlying module path and wire protocol are
+unchanged, so it interoperates with standard Syncthing for ordinary folder
+sharing. Upstream resources (documentation, forum) referenced below apply
+except where AirinSync intentionally differs.
+
 ## Goals
 
-Syncthing is a **continuous file synchronization program**. It synchronizes
+AirinSync is a **continuous file synchronization program**. It synchronizes
 files between two or more computers. We strive to fulfill the goals below.
 The goals are listed in order of importance, the most important ones first.
 This is the summary version of the goal list - for more
 commentary, see the full [Goals document][13].
 
-Syncthing should be:
+AirinSync should be:
 
 1. **Safe From Data Loss**
 
@@ -29,7 +36,7 @@ Syncthing should be:
 
 3. **Easy to Use**
 
-   Syncthing should be approachable, understandable, and inclusive.
+   AirinSync should be approachable, understandable, and inclusive.
 
 4. **Automatic**
 
@@ -37,12 +44,12 @@ Syncthing should be:
 
 5. **Universally Available**
 
-   Syncthing should run on every common computer. We are mindful that the
+   AirinSync should run on every common computer. We are mindful that the
    latest technology is not always available to every individual.
 
 6. **For Individuals**
 
-   Syncthing is primarily about empowering the individual user with safe,
+   AirinSync is primarily about empowering the individual user with safe,
    secure, and easy to use file synchronization.
 
 7. **Everything Else**
@@ -55,39 +62,42 @@ Syncthing should be:
 
 Take a look at the [getting started guide][2].
 
-There are a few examples for keeping Syncthing running in the background
+There are a few examples for keeping AirinSync running in the background
 on your system in [the etc directory][3]. There are also several [GUI
 implementations][11] for Windows, Mac, and Linux.
 
 ## Docker
 
-To run Syncthing in Docker, see [the Docker README][16].
+To run AirinSync in Docker, see [the Docker README][16].
 
 ## Getting in Touch
 
-The first and best point of contact is the [Forum][8].
-If you've found something that is clearly a
-bug, feel free to report it in the [GitHub issue tracker][10].
+For questions about AirinSync specifically, contact your AirinSync maintainer.
+For upstream Syncthing, the first and best point of contact is the [Forum][8].
+If you've found something that is clearly a bug in the upstream code, feel free
+to report it in the upstream [GitHub issue tracker][10].
 
-If you believe that you’ve found a Syncthing-related security vulnerability,
-please report it by emailing security@syncthing.net. Do not report it in the
-Forum or issue tracker.
+If you believe that you’ve found a security vulnerability in the upstream
+Syncthing code, please report it by emailing security@syncthing.net. Do not
+report it in the Forum or issue tracker.
 
 ## Building
 
-Building Syncthing from source is easy. After extracting the source bundle from
+Building AirinSync from source is easy. After extracting the source bundle from
 a release or checking out git, you just need to run `go run build.go` and the
 binaries are created in `./bin`. There's [a guide][5] with more details on the
 build process.
 
 ### FIPS 140-3 mode
 
-Syncthing can additionally be built in a FIPS variant that restricts it to
-cryptography from the FIPS 140-3 validated Go cryptographic module
+AirinSync can be built in a FIPS variant that restricts it to cryptography from
+the FIPS 140-3 validated Go cryptographic module
 (`GOFIPS140=v1.0.0 go build -tags fips -o AirinSync ./cmd/syncthing`). This is intended for
 deployments with a FIPS requirement running on their own set of nodes. See
 [FIPS.md](FIPS.md) for how to build, run, and verify it, and for the feature
-restrictions it imposes (encrypted folders and QUIC are disabled).
+restrictions it imposes (encrypted folders and QUIC are disabled). Compliance
+evidence (CMVP certificate, binary provenance) is in
+[FIPS-COMPLIANCE.md](FIPS-COMPLIANCE.md).
 
 ## Signed Releases
 
@@ -99,7 +109,8 @@ code-signed.
 
 ## Documentation
 
-Please see the Syncthing [documentation site][6] [[source]][17].
+AirinSync shares the upstream Syncthing [documentation site][6] [[source]][17],
+except for the AirinSync-specific behavior documented in [FIPS.md](FIPS.md).
 
 All code is licensed under the [MPLv2 License][7].
 
